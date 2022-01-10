@@ -1,13 +1,13 @@
 # OECM validation
 
-Use designatedlands script with slightly different sources to identify areas that may qualify as OECM designations (protected-ish).
+Use [bcgov/designatedlands](https://github.com/bcgov/designatedlands) script to identify areas with sufficent overlapping restrictions to perhaps qualify as OECM designations.
 
-Repo contains `sources_designations.csv` versions and reporting queries.
+Repo contains list of designations/level of restriction (`sources_designations.csv`) and reporting queries.
 
 ## Usage
 
-Run designatedlands.py script as per usual but point to `sources_designations.csv` held here.
+Run `designatedlands.py` script as per usual, but referencing `sources_designations.csv` held here.
 
-## Reporing
+## Reporting
 
-Run `sql/designation_summary.sql` against the designatedlands db output table
+Run `sql/designation_summary.sql` against the designatedlands postgres db.

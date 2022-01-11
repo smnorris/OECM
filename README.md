@@ -10,5 +10,7 @@ Run `designatedlands.py` script as per usual, but referencing `sources_designati
 
 ## Reporting
 
-`psql2csv < sql/designation_summary.sql > designation_summary.csv`
-`psql2csv < sql/designation_summary_acts.sql > designation_summary_acts.csv`
+```
+psql2csv < sql/designation_summary.sql > designation_summary.csv
+psql2csv < sql/designation_summary_acts.sql > designation_summary_acts.csv
+```

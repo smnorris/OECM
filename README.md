@@ -10,4 +10,5 @@ Run `designatedlands.py` script as per usual, but referencing `sources_designati
 
 ## Reporting
 
-Run `sql/designation_summary.sql` against the designatedlands postgres db.
+`psql2csv < sql/designation_summary.sql > designation_summary.csv`
+`psql2csv < sql/designation_summary_acts.sql > designation_summary_acts.csv`

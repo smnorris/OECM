@@ -23,8 +23,7 @@ Repo contains:
 3. Prep CE data manually
 
     CE human impacts data contains multisurface types - and does not load to postgis with existing `pgdata.ogr2pg`
-    used in `designatedlands`. Rather than modifying `pgdata` and cutting a new release (I don't want to support
-    this package anymore), just load this table with `ogr2ogr` directly:
+    used in `designatedlands`. Rather than modifying `pgdata`, just load this table with `ogr2ogr` directly:
 
         ogr2ogr \
             -f PostgreSQL \

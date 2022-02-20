@@ -1,4 +1,4 @@
--- oecm only
+-- add acts to oecm designations
 
 drop table if exists oecm;
 
@@ -14,7 +14,7 @@ with designations as
     mine_restriction_max,
     og_restriction_max,
     geom
-  from designations_planarized_oecm
+  from designations_planarized
   order by designations_planarized_id
 ),
 
@@ -74,7 +74,7 @@ select
   c.acts,
   map_tile,
   geom
-from designations_planarized_oecm a
+from designations_planarized a
 left outer join positions b
 on a.designations_planarized_id = b.designations_planarized_id
 left outer join distinct_acts c

@@ -7,8 +7,7 @@ with designations as
         unnest(source_name) as source_name,
         forest_restriction_max,
         mine_restriction_max,
-        og_restriction_max,
-        geom
+        og_restriction_max
     from designations_planarized_oecm_nrr_cef
 ),
 
@@ -87,8 +86,7 @@ max_restrictions as
     d.forest_restriction_max,
     d.mine_restriction_max,
     d.og_restriction_max,
-    da.acts,
-    d.geom
+    da.acts
   from designations d
   left outer join distinct_acts da
   on d.designations_planarized_id = da.designations_planarized_id
@@ -104,32 +102,33 @@ max_restrictions as
     d.forest_restriction_max,
     d.mine_restriction_max,
     d.og_restriction_max,
-    da.acts,
-    d.geom
+    da.acts
 ),
 
 areas as
 (
   select
-    array_to_string(designations, '; ') as designations,
-    nr_region,
-    cef_human_disturbance,
-    cef_disturb_sub_group,
-    forest_restriction_max,
-    mine_restriction_max,
-    og_restriction_max,
-    acts,
-    round((sum(st_area(geom)) / 10000)::numeric, 6) as area_ha
-  from max_restrictions
+    array_to_string(r.designations, '; ') as designations,
+    r.nr_region,
+    r.cef_human_disturbance,
+    r.cef_disturb_sub_group,
+    r.forest_restriction_max,
+    r.mine_restriction_max,
+    r.og_restriction_max,
+    r.acts,
+    round((sum(st_area(d.geom)) / 10000)::numeric, 6) as area_ha
+  from max_restrictions r
+  inner join designations_planarized_oecm_nrr_cef d
+  on r.designations_planarized_id = d.designations_planarized_id
   group by
-    designations,
-    nr_region,
-    cef_human_disturbance,
-    cef_disturb_sub_group,
-    forest_restriction_max,
-    mine_restriction_max,
-    og_restriction_max,
-    acts
+    r.designations,
+    r.nr_region,
+    r.cef_human_disturbance,
+    r.cef_disturb_sub_group,
+    r.forest_restriction_max,
+    r.mine_restriction_max,
+    r.og_restriction_max,
+    r.acts
 ),
 
 total_per_designation as

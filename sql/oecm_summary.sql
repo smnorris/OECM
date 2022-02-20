@@ -3,13 +3,14 @@ with designations as
 (
   select
     designations_planarized_id,
-    unnest(designation) as designation,
+    --unnest(designation) as designation,
+    unnest(array_remove(array_remove(designation,'nr_region'), 'cef_human_disturbance')) as designation,
     unnest(source_id) as source_id,
     forest_restriction_max,
     mine_restriction_max,
     og_restriction_max,
     geom
-  from designations_planarized
+  from designations_planarized_oecm -- use the table with no NRR/CEF
 ),
 
 all_acts as

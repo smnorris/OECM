@@ -9,17 +9,20 @@ with designations as
         mine_restriction_max,
         og_restriction_max,
         geom
-    from designations_planarized
+    from designations_planarized_oecm_nrr_cef
 ),
 
--- extract disturbance into new column
+-- extract disturbance into new columns
 disturbance as
 (
     select
         designations_planarized_id,
-        source_name as cef_human_disturbance
-    from designations
-    where designation = 'cef_human_disturbance'
+        source_name as cef_human_disturbance,
+        cef_disturb_sub_group
+    from designations d
+    inner join src_40_cef_human_disturbance cef
+    on d.source_id::integer = cef.ogc_fid
+    where d.designation = 'cef_human_disturbance'
 ),
 
 -- extract nr region into new column
@@ -80,6 +83,7 @@ max_restrictions as
     array_remove(array_remove(array_agg(distinct d.designation),'nr_region'), 'cef_human_disturbance') as designations,
     r.nr_region,
     ds.cef_human_disturbance,
+    ds.cef_disturb_sub_group,
     d.forest_restriction_max,
     d.mine_restriction_max,
     d.og_restriction_max,
@@ -96,6 +100,7 @@ max_restrictions as
     d.designations_planarized_id,
     r.nr_region,
     ds.cef_human_disturbance,
+    ds.cef_disturb_sub_group,
     d.forest_restriction_max,
     d.mine_restriction_max,
     d.og_restriction_max,
@@ -109,31 +114,49 @@ areas as
     array_to_string(designations, '; ') as designations,
     nr_region,
     cef_human_disturbance,
+    cef_disturb_sub_group,
     forest_restriction_max,
     mine_restriction_max,
     og_restriction_max,
     acts,
-    round((sum(st_area(geom)) / 10000)::numeric, 2) as area_ha
+    round((sum(st_area(geom)) / 10000)::numeric, 6) as area_ha
   from max_restrictions
   group by
     designations,
     nr_region,
     cef_human_disturbance,
+    cef_disturb_sub_group,
     forest_restriction_max,
     mine_restriction_max,
     og_restriction_max,
     acts
+),
+
+total_per_designation as
+(
+  select
+    designations,
+    nr_region,
+    sum(area_ha) as designation_area_ha
+  from areas
+  group by designations, nr_region
 )
 
 select
-  designations,
-  nr_region,
-  cef_human_disturbance,
-  forest_restriction_max,
-  mine_restriction_max,
-  og_restriction_max,
-  acts,
-  (forest_restriction_max + mine_restriction_max + og_restriction_max) as sum_restriction,
-  area_ha
-from areas
-where area_ha >= 100;
+  a.designations,
+  a.nr_region,
+  a.cef_human_disturbance,
+  a.cef_disturb_sub_group,
+  a.forest_restriction_max,
+  a.mine_restriction_max,
+  a.og_restriction_max,
+  a.acts,
+  (a.forest_restriction_max + a.mine_restriction_max + a.og_restriction_max) as sum_restriction,
+  t.designation_area_ha as designation_nrr_ha,
+  round(((a.area_ha / t.designation_area_ha) * 100), 2) as designation_nrr_cef_pct,
+  a.area_ha
+from areas a
+inner join total_per_designation t
+on a.designations = t.designations and a.nr_region = t.nr_region
+where a.area_ha > 0
+order by designations;

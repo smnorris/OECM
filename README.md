@@ -40,48 +40,44 @@ This README does not cover db setup, see designatedlands repo for more info.
 
 To dump to .gdb we need a version of gdal with the ESRI File Geodatabase driver enabled.
 Currently, building a separate docker container seems to be the easiest way to do this.
-See https://gist.github.com/smnorris/01cf5147d73cec1d05a9ec149b5f264e for complete instructions.
+See https://gist.github.com/smnorris/01cf5147d73cec1d05a9ec149b5f264e for complete instructions. Note that creating the .gdb with this method  is *extremely* slow. It is managable on an intel mac but may not be feasible on an M1 mac.
 
-Once the docker container is ready, use it to dump postgres output tables to file:
+To avoid monkeying with the network settings (necessary to connect from the container to db on localhost), do the 
+translation in two steps - first dumping to FlatGeobuf temp files and then to file gdb.
 
-    docker run --rm -v /Users:/Users osgeo/gdal:fgdb \
-      ogr2ogr -f FileGDB \
-      $PWD/outputs/oecm_designations.gdb \
-      PG:postgresql://postgres:postgres@host.docker.internal:5433/designatedlands \
+    # pg -> .fgb
+    mkdir -p outputs/oecm_designations
+    time ogr2ogr -f FlatGeobuf \
+      outputs/oecm_designations/designations_planarized.fgb \
+      PG:$DATABASE_URL \
+      -lco SPATIAL_INDEX=NO \
       -nln designations_planarized \
       -nlt Polygon \
       -sql "select * from oecm"
+    time ogr2ogr -f FlatGeobuf \
+      outputs/oecm_designations/designations_planarized_cef.fgb \
+      PG:$DATABASE_URL \
+      -lco SPATIAL_INDEX=NO \
+      -nln designations_planarized_cef \
+      -nlt Polygon \
+      -sql "select * from oecm_nrr_cef"
 
-    docker run --rm -v /Users:/Users osgeo/gdal:fgdb \
+    # .fgb -> .gdb (this takes several hours)
+    docker run --network=host --platform linux/amd64 --rm -v /Users:/Users osgeo/gdal:fgdb \
       ogr2ogr -f FileGDB \
       $PWD/outputs/oecm_designations.gdb \
-      PG:postgresql://postgres:postgres@host.docker.internal:5433/designatedlands \
+      -nln designations_planarized \
+      -nlt Polygon \
+      $PWD/outputs/oecm_designations/designations_planarized.fgb \
+      designations_planarized
+    docker run --platform linux/amd64 --rm -v /Users:/Users osgeo/gdal:fgdb \
+      ogr2ogr -f FileGDB \
+      $PWD/outputs/oecm_designations.gdb \
       -update \
       -nln designations_planarized_cef \
       -nlt Polygon \
-      -sql "select
-              a.oecm_nrr_cef_id,
-              a.designations_planarized_id,
-              b.designation,
-              b.source_id,
-              b.source_name,
-              b.forest_restrictions,
-              b.mine_restrictions,
-              b.og_restrictions,
-              b.forest_restriction_max,
-              b.mine_restriction_max,
-              b.og_restriction_max,
-              b.sum_restriction,
-              b.acts,
-              b.map_tile,
-              c.region_name,
-              d.cef_disturb_group_rank,
-              d.cef_disturb_sub_group,
-              a.geom
-            from oecm_nrr_cef a
-            inner join oecm b
-            on a.designations_planarized_id = b.designations_planarized_id
-            left outer join adm_nr_regions_sp c
-            on a.adm_nr_region_id = c.adm_nr_region_id
-            left outer join cef_human_disturbance d
-            on a.cef_id = d.cef_id;"
+      $PWD/outputs/oecm_designations/designations_planarized_cef.fgb \
+      designations_planarized_cef
+
+    # delete the temp flatgeobufs
+    rm -r outputs/oecm_designations

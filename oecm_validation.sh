@@ -96,11 +96,8 @@ psql -c "create table oecm_nrr_cef
 TILES=$(psql -AtX -c "SELECT distinct map_tile from designations_planarized order by map_tile")
 parallel --progress psql -f sql/oecm_nrr_cef.sql -v tile={1} ::: $TILES
 
-# index the output geoms and foreign keys
+# index the output geoms 
 psql -c "create index on oecm_nrr_cef using gist (geom)"
-psql -c "create index on oecm_nrr_cef (designations_planarized_id)"
-psql -c "create index on oecm_nrr_cef (cef_id)"
-psql -c "create index on oecm_nrr_cef (adm_nr_region_id)"
 
 # run reporting
 mkdir -p outputs

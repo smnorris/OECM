@@ -68,9 +68,7 @@ Once the docker container is ready, use it to dump postgres output tables to fil
               b.sum_restriction,
               b.acts,
               b.map_tile,
-              a.adm_nr_region_id,
               c.region_name,
-              a.cef_id,
               d.cef_disturb_group_rank,
               d.cef_disturb_sub_group,
               a.geom

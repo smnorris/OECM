@@ -8,55 +8,55 @@ WITH tile AS
   where map_tile = :'tile'
 ),
 
-src_a AS
-(
-  SELECT
-    src.adm_nr_region_id,
-    t.map_tile,
-    CASE 
-      WHEN ST_CoveredBy(src.geom, t.geom) THEN st_multi(src.geom)
-      ELSE ST_Multi(ST_Intersection(src.geom, t.geom))
-    END as geom
-  FROM adm_nr_regions_sp src
-  INNER JOIN tile t
-  ON st_intersects(src.geom, t.geom)
-),
+  src_a AS
+  (
+    SELECT
+      src.adm_nr_region_id,
+      t.map_tile,
+      CASE
+        WHEN ST_CoveredBy(src.geom, t.geom) THEN src.geom
+        ELSE ST_Intersection(src.geom, t.geom)
+      END as geom
+    FROM adm_nr_regions_sp src
+    INNER JOIN tile t
+    ON st_intersects(src.geom, t.geom)
+  ),
 
-src_b AS
-(
-  SELECT
-    src.cef_id,
-    t.map_tile,
-    CASE 
-      WHEN ST_CoveredBy(src.geom, t.geom) THEN st_multi(src.geom)
-      ELSE ST_Multi(ST_Intersection(src.geom, t.geom))
-    END as geom
-  FROM cef_human_disturbance src
-  INNER JOIN tile t
-  ON st_intersects(src.geom, t.geom)
-),
+  src_b AS
+  (
+    SELECT
+      src.cef_id,
+      t.map_tile,
+      CASE
+        WHEN ST_CoveredBy(src.geom, t.geom) THEN src.geom
+        ELSE ST_Intersection(src.geom, t.geom)
+      END as geom
+    FROM cef_human_disturbance src
+    INNER JOIN tile t
+    ON st_intersects(src.geom, t.geom)
+  ),
 
-src_c AS
-(
+  src_c AS
+  (
 
-  SELECT
-    src.designations_planarized_id,
-    src.map_tile,
-    st_multi(src.geom) as geom
-  FROM designations_planarized src
-  inner join tile t
-  on src.map_tile = t.map_tile
-),
+    SELECT
+      src.designations_planarized_id,
+      src.map_tile,
+      src.geom
+    FROM designations_planarized src
+    inner join tile t
+    on src.map_tile = t.map_tile
+  ),
 
--- put them together
-src_all AS 
-(
-  select map_tile, (st_dump(geom)).geom from src_a
-  union all 
-  select map_tile, (st_dump(geom)).geom from src_b
-  union all
-  select map_tile, (st_dump(geom)).geom from src_c
-),
+  -- put them together
+  src_all AS
+  (
+    select map_tile, (st_dump(geom)).geom from src_a
+    union all
+    select map_tile, (st_dump(geom)).geom from src_b
+    union all
+    select map_tile, (st_dump(geom)).geom from src_c
+  ),
 
 -- dump poly rings and convert to lines
 rings as
@@ -65,6 +65,7 @@ rings as
     map_tile,
     ST_Exteriorring((ST_DumpRings(geom)).geom) AS geom
   FROM src_all
+  where st_dimension(geom) = 2
 ),
 
 -- node the lines with st_union and dump to singlepart lines

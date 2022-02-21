@@ -25,22 +25,12 @@ Repo contains:
         python designatedlands.py preprocess $PROJECTS/repo/oecm_validation/oecm.cfg
         python designatedlands.py process-vector $PROJECTS/repo/oecm_validation/oecm.cfg
 
-4. Load CEF and NRR data and overlay with `designations_planarized`:
+4. Load CEF and NRR data, overlay with `designations_planarized`, create custom output table, run reports:
 
         cd $PROJECTS/repo/oecm_validation
-        ./oecm_nrr_cef.sh
-
-## Reporting
-
-        mkdir -p outputs
-        psql2csv < sql/oecm_summary.sql > outputs/oecm_summary.csv
-        psql2csv < sql/oecm_nrr_cef_summary.sql > outputs/oecm_nrr_cef_summary.csv
+        ./oecm_validation.sh
 
 ## Dump output tables to file:
-
-First, create custom output table (adds acts associated with designations):
-
-        psql -f sql/oecm_dump.sql
 
 To dump to .gdb we need a version of gdal with the ESRI File Geodatabase driver enabled.
 Currently, building a separate docker container seems to be the easiest way to do this.
@@ -50,7 +40,7 @@ Once the docker container is ready, use it to dump postgres output tables to fil
 
     docker run --rm -v /Users:/Users osgeo/gdal:fgdb \
       ogr2ogr -f FileGDB \
-      $PWD/outputs/designatedlands_20220210.gdb \
+      $PWD/outputs/oecm_designations.gdb \
       PG:postgresql://postgres:postgres@host.docker.internal:5433/designatedlands \
       -nln designations_planarized \
       -nlt Polygon \
@@ -58,7 +48,7 @@ Once the docker container is ready, use it to dump postgres output tables to fil
 
     docker run --rm -v /Users:/Users osgeo/gdal:fgdb \
       ogr2ogr -f FileGDB \
-      $PWD/outputs/designatedlands_20220219.gdb \
+      $PWD/outputs/oecm_designations.gdb \
       PG:postgresql://postgres:postgres@host.docker.internal:5433/designatedlands \
       -update \
       -nln designations_planarized_cef \

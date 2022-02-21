@@ -78,7 +78,17 @@ psql -c "create table oecm_nrr_cef
 
 # run overlay in parallel
 TILES=$(psql -AtX -c "SELECT distinct map_tile from designations_planarized order by map_tile")
-parallel psql -f sql/oecm_nrr_cef.sql -v tile={1} ::: $TILES
+parallel --progress psql -f sql/oecm_nrr_cef.sql -v tile={1} ::: $TILES
 
-# index the output geoms
+# index the output geoms and foreign keys
 psql -c "create index on oecm_nrr_cef using gist (geom)"
+psql -c "create index on oecm_nrr_cef (cef_id)"
+psql -c "create index on oecm_nrr_cef (adm_nr_region_id)"
+
+# add associated acts column to designatedlands_planarized, creating oecm table
+psql -f sql/oecm.sql
+
+# run reporting
+mkdir -p outputs
+psql2csv < sql/oecm_summary.sql > outputs/oecm_summary.csv
+psql2csv < sql/oecm_nrr_cef_summary.sql > outputs/oecm_nrr_cef_summary.csv

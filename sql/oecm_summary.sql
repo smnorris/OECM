@@ -37,4 +37,4 @@ select
   sum_restriction,
   area_ha
 from areas
-where area_ha > 100;
+where area_ha > 0;

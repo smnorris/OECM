@@ -9,15 +9,21 @@ Repo contains:
 - script for overlaying NRR/CEF with oecm designatedlands output
 - queries for reporting
 
+This README does not cover db setup, see designatedlands repo for more info.
+
 ## Run overlays
 
-1. Use the existing `designatedlands` conda/docker setup:
+1. Use the existing `designatedlands` conda environment:
 
-        cd $PROJECTS/repo/designatedlands  # navigate to designatedlands repo
-        docker start dlpg                  # start up the existing db container
-        conda activate designatedlands     # activate the environment
+        cd $PROJECTS/repo/designatedlands   # navigate to designatedlands repo
+        conda env create -f environment.yml # create environment if it does not already exist
+        conda activate designatedlands      # activate the environment
 
-2. Manually download required data as noted in `sources_designations.csv` to `$PROJECTS/repo/designatedlands/source_data` folder.
+2. Manually download required data as noted in `sources_designations.csv` to `$PROJECTS/repo/designatedlands/source_data` folder
+
+3. Remove shape_area column from Peace Moberly Tract shapefile (value is too large)
+
+        ogr2ogr source_data/pm.shp source_data/Peace_Moberly_Tract.shp -select Shape_Leng
 
 3. Still in `designatedlands` folder, run designatedlands script to create required output table `designations_planarized`:
 

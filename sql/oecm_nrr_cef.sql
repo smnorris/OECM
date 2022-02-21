@@ -43,7 +43,7 @@ WITH tile AS
       src.designations_planarized_id,
       src.map_tile,
       src.geom
-    FROM designations_planarized src
+    FROM oecm src
     inner join tile t
     on src.map_tile = t.map_tile
   ),
@@ -90,16 +90,44 @@ flattened AS
 
 -- get the attributes and insert into output
 INSERT INTO oecm_nrr_cef (
-  designations_planarized_id,
-  adm_nr_region_id,
-  cef_id,
-  map_tile,
-  geom
+    designations_planarized_id,
+    adm_nr_region_id,
+    cef_id,
+    designation,
+    source_id,
+    source_name,
+    forest_restrictions,
+    mine_restrictions,
+    og_restrictions,
+    forest_restriction_max,
+    mine_restriction_max,
+    og_restriction_max,
+    sum_restriction,
+    acts,
+    nr_region,
+    cef_disturb_group_rank,
+    cef_disturb_sub_group,
+    map_tile,
+    geom
 )
 SELECT
   c.designations_planarized_id,
   a.adm_nr_region_id,
   b.cef_id,
+  c.designation,
+  c.source_id,
+  c.source_name,
+  c.forest_restrictions,
+  c.mine_restrictions,
+  c.og_restrictions,
+  c.forest_restriction_max,
+  c.mine_restriction_max,
+  c.og_restriction_max,
+  c.sum_restriction,
+  c.acts,
+  a.region_name as nr_region,
+  b.cef_disturb_group_rank,
+  b.cef_disturb_sub_group,
   f.map_tile,
   f.geom
 FROM flattened f
@@ -107,5 +135,5 @@ LEFT OUTER JOIN adm_nr_regions_sp a
 ON ST_Contains(a.geom, ST_PointOnSurface(f.geom))
 LEFT OUTER JOIN cef_human_disturbance b
 ON ST_Contains(b.geom, ST_PointOnSurface(f.geom))
-LEFT OUTER JOIN designations_planarized c
+LEFT OUTER JOIN oecm c
 ON ST_Contains(c.geom, ST_PointOnSurface(f.geom));

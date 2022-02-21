@@ -1,12 +1,14 @@
 #!/bin/bash
 set -euxo pipefail
 
-# Load NRR/CEF data to designatedlands db
+# add associated acts column to designatedlands_planarized, creating oecm table
+psql -f sql/oecm.sql
 
+# Load NRR/CEF data to designatedlands db
 # NRR (manual download as WFS does not include this layer)
 ogr2ogr \
     -f PostgreSQL \
-    PG:"host=localhost port=5433 user=postgres dbname=designatedlands password=postgres" \
+    PG:$DATABASE_URL \
     -lco OVERWRITE=YES \
     -overwrite \
     -lco SCHEMA=public \
@@ -23,7 +25,7 @@ psql -c "alter table adm_nr_regions_sp rename column objectid_1 to adm_nr_region
 # CEF (manual download from GeoBC)
 ogr2ogr \
     -f PostgreSQL \
-    PG:"host=localhost port=5433 user=postgres dbname=designatedlands password=postgres" \
+    PG:$DATABASE_URL \
     -lco OVERWRITE=YES \
     -overwrite \
     -lco SCHEMA=public \
@@ -72,6 +74,20 @@ psql -c "create table oecm_nrr_cef
   designations_planarized_id integer,
   adm_nr_region_id integer,
   cef_id integer,
+  designation text,
+  source_id text,
+  source_name text,
+  forest_restrictions text,
+  mine_restrictions text,
+  og_restrictions text,
+  forest_restriction_max integer,
+  mine_restriction_max integer,
+  og_restriction_max integer,
+  sum_restriction integer,
+  acts text,
+  nr_region text,
+  cef_disturb_group_rank integer,
+  cef_disturb_sub_group text,
   map_tile text,
   geom geometry(polygon, 3005)
 );"
@@ -82,11 +98,9 @@ parallel --progress psql -f sql/oecm_nrr_cef.sql -v tile={1} ::: $TILES
 
 # index the output geoms and foreign keys
 psql -c "create index on oecm_nrr_cef using gist (geom)"
+psql -c "create index on oecm_nrr_cef (designations_planarized_id)"
 psql -c "create index on oecm_nrr_cef (cef_id)"
 psql -c "create index on oecm_nrr_cef (adm_nr_region_id)"
-
-# add associated acts column to designatedlands_planarized, creating oecm table
-psql -f sql/oecm.sql
 
 # run reporting
 mkdir -p outputs

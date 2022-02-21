@@ -8,6 +8,7 @@ Repo contains:
 - data source csv
 - script for overlaying NRR/CEF with oecm designatedlands output
 - queries for reporting
+- rough guide to dumping to .gdb
 
 This README does not cover db setup, see designatedlands repo for more info.
 

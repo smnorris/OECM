@@ -96,6 +96,9 @@ psql -c "create table oecm_nrr_cef
 TILES=$(psql -AtX -c "SELECT distinct map_tile from designations_planarized order by map_tile")
 parallel --progress psql -f sql/oecm_nrr_cef.sql -v tile={1} ::: $TILES
 
+# delete features from oecm_nrr_cef that are outside of designatedlands tiling system (ie, marine)
+psql -c "delete from oecm_nrr_cef where designations_planarized_id is null"
+
 # index the output geoms 
 psql -c "create index on oecm_nrr_cef using gist (geom)"
 

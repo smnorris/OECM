@@ -2,11 +2,6 @@ with areas as
 (
   select
     designation,
-    source_id,
-    source_name,
-    forest_restrictions,
-    mine_restrictions,
-    og_restrictions,
     forest_restriction_max,
     mine_restriction_max,
     og_restriction_max,
@@ -20,11 +15,6 @@ with areas as
   where designations_planarized_id is not null
   group by
     designation,
-    source_id,
-    source_name,
-    forest_restrictions,
-    mine_restrictions,
-    og_restrictions,
     forest_restriction_max,
     mine_restriction_max,
     og_restriction_max,

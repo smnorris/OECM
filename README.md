@@ -32,53 +32,16 @@ This README does not cover db setup, see designatedlands repo for more info.
         python designatedlands.py preprocess $PROJECTS/repo/oecm_validation/oecm.cfg
         python designatedlands.py process-vector $PROJECTS/repo/oecm_validation/oecm.cfg
 
-4. Load CEF and NRR data, overlay with `designations_planarized`, create custom output table, run reports:
+4. Load CEF and NRR data, overlay with `designations_planarized`, create custom output table, run reports, dump to temp file:
 
         cd $PROJECTS/repo/oecm_validation
         ./oecm_validation.sh
 
-## Dump output tables to file:
+5. Run a quick area based QA to see if total areas match and find features with biggest area differences between outputs:
 
-To dump to .gdb we need a version of gdal with the ESRI File Geodatabase driver enabled.
-Currently, building a separate docker container seems to be the easiest way to do this.
-See https://gist.github.com/smnorris/01cf5147d73cec1d05a9ec149b5f264e for complete instructions. Note that creating the .gdb with this method  is *extremely* slow. It is managable on an intel mac but may not be feasible on an M1 mac.
+        psql -f sql/qa.sql
 
-To avoid monkeying with the network settings (necessary to connect from the container to db on localhost), do the 
-translation in two steps - first dumping to FlatGeobuf temp files and then to file gdb.
+6. Load temp files to remote for conversion to .gdb:
 
-    # pg -> .fgb
-    mkdir -p outputs/oecm_designations
-    time ogr2ogr -f FlatGeobuf \
-      outputs/oecm_designations/designations_planarized.fgb \
-      PG:$DATABASE_URL \
-      -lco SPATIAL_INDEX=NO \
-      -nln designations_planarized \
-      -nlt Polygon \
-      -sql "select * from oecm"
-    time ogr2ogr -f FlatGeobuf \
-      outputs/oecm_designations/designations_planarized_cef.fgb \
-      PG:$DATABASE_URL \
-      -lco SPATIAL_INDEX=NO \
-      -nln designations_planarized_cef \
-      -nlt Polygon \
-      -sql "select * from oecm_nrr_cef"
-
-    # .fgb -> .gdb (this takes several hours)
-    docker run --network=host --platform linux/amd64 --rm -v /Users:/Users osgeo/gdal:fgdb \
-      ogr2ogr -f FileGDB \
-      $PWD/outputs/oecm_designations.gdb \
-      -nln designations_planarized \
-      -nlt Polygon \
-      $PWD/outputs/oecm_designations/designations_planarized.fgb \
-      designations_planarized
-    docker run --platform linux/amd64 --rm -v /Users:/Users osgeo/gdal:fgdb \
-      ogr2ogr -f FileGDB \
-      $PWD/outputs/oecm_designations.gdb \
-      -update \
-      -nln designations_planarized_cef \
-      -nlt Polygon \
-      $PWD/outputs/oecm_designations/designations_planarized_cef.fgb \
-      designations_planarized_cef
-
-    # delete the temp flatgeobufs
-    rm -r outputs/oecm_designations
+        scp outputs/oecm_designations/*fgb <USER>@<HOST>:<PATH>
+        ssh <HOST> 'bash -s' < fgb2gdb.sh

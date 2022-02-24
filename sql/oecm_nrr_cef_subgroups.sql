@@ -73,7 +73,7 @@ lines as
 (
   SELECT
     map_tile,
-    (st_dump(st_union(geom, .01))).geom as geom
+    (st_dump(st_union(geom, .1))).geom as geom
   FROM rings
   GROUP BY map_tile
 ),

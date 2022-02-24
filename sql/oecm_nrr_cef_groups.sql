@@ -37,7 +37,7 @@ select
   cef_disturb_group,
   cef_disturb_group_rank,
   map_tile,
-  (st_dump(st_union(geom, .01))).geom as geom
+  (st_dump(st_union(geom, .1))).geom as geom
 from oecm_nrr_cef_subgroups
 where map_tile = :'tile'
 group by

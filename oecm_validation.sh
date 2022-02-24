@@ -137,3 +137,28 @@ mkdir -p outputs
 psql2csv < sql/summary_oecm.sql > outputs/oecm_summary.csv
 psql2csv < sql/summary_oecm_nrr_cef_subgroups.sql > outputs/oecm_nrr_cef_subgroups_summary.csv
 psql2csv < sql/summary_oecm_nrr_cef_groups.sql > outputs/oecm_nrr_cef_groups_summary.csv
+
+# dump to file
+# used flat geobuf (fast to write to and is a built-in gdal format)
+mkdir -p outputs/oecm_designations
+ogr2ogr -f FlatGeobuf \
+  outputs/oecm_designations/oecm.fgb \
+  PG:$DATABASE_URL \
+  -lco SPATIAL_INDEX=NO \
+  -nln oecm \
+  -nlt Polygon \
+  -sql "select * from oecm"
+ogr2ogr -f FlatGeobuf \
+  outputs/oecm_designations/oecm_nrr_cef_groups.fgb \
+  PG:$DATABASE_URL \
+  -lco SPATIAL_INDEX=NO \
+  -nln oecm_nrr_cef_groups \
+  -nlt Polygon \
+  -sql "select * from oecm_nrr_cef_groups"
+ogr2ogr -f FlatGeobuf \
+  outputs/oecm_designations/oecm_nrr_cef_subgroups.fgb \
+  PG:$DATABASE_URL \
+  -lco SPATIAL_INDEX=NO \
+  -nln oecm_nrr_cef_subgroups \
+  -nlt Polygon \
+  -sql "select * from oecm_nrr_cef_subgroups"

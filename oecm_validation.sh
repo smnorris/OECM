@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euxo pipefail
 
+# find distinct tiles in designatedlands
+TILES=$(psql -AtX -c "SELECT distinct map_tile from designations_planarized order by map_tile")
+
 # add associated acts column to designatedlands_planarized, creating oecm table
 psql -f sql/oecm.sql
 
@@ -67,10 +70,10 @@ psql -c "create index on cef_human_disturbance (cef_id);"
 psql -c "drop table cef_load;"
 
 # create empty output table for overlay
-psql -c "drop table if exists oecm_nrr_cef"
-psql -c "create table oecm_nrr_cef
+psql -c "drop table if exists oecm_nrr_cef_subgroups"
+psql -c "create table oecm_nrr_cef_subgroups
 (
-  oecm_nrr_cef_id serial primary key,
+  oecm_nrr_cef_subgroups_id serial primary key,
   designations_planarized_id integer,
   adm_nr_region_id integer,
   cef_id integer,
@@ -86,23 +89,51 @@ psql -c "create table oecm_nrr_cef
   sum_restriction integer,
   acts text,
   nr_region text,
+  cef_disturb_group text,
   cef_disturb_group_rank integer,
   cef_disturb_sub_group text,
+  cef_disturb_sub_group_rank integer,
   map_tile text,
   geom geometry(polygon, 3005)
 );"
 
 # run overlay in parallel
-TILES=$(psql -AtX -c "SELECT distinct map_tile from designations_planarized order by map_tile")
-parallel --progress psql -f sql/oecm_nrr_cef.sql -v tile={1} ::: $TILES
+parallel --progress psql -f sql/oecm_nrr_cef_subgroups.sql -v tile={1} ::: $TILES
 
 # delete features from oecm_nrr_cef that are outside of designatedlands tiling system (ie, marine)
-psql -c "delete from oecm_nrr_cef where designations_planarized_id is null"
+psql -c "delete from oecm_nrr_cef_subgroups where designations_planarized_id is null"
+psql -c "create index on oecm_nrr_cef_subgroups using gist (geom)"
 
-# index the output geoms 
-psql -c "create index on oecm_nrr_cef using gist (geom)"
+# union/dissolve to remove CEF sub-groups
+psql -c "drop table if exists oecm_nrr_cef_groups"
+psql -c "create table oecm_nrr_cef_groups
+(
+  oecm_nrr_cef_groups_id serial primary key,
+  designations_planarized_id integer,
+  adm_nr_region_id integer,
+  designation text,
+  source_id text,
+  source_name text,
+  forest_restrictions text,
+  mine_restrictions text,
+  og_restrictions text,
+  forest_restriction_max integer,
+  mine_restriction_max integer,
+  og_restriction_max integer,
+  sum_restriction integer,
+  acts text,
+  nr_region text,
+  cef_disturb_group text,
+  cef_disturb_group_rank integer,
+  map_tile text,
+  geom geometry(polygon, 3005)
+);"
+# and insert the data
+parallel --progress psql -f sql/oecm_nrr_cef_groups.sql -v tile={1} ::: $TILES
+psql -c "create index on oecm_nrr_cef_groups using gist (geom)"
 
 # run reporting
 mkdir -p outputs
-psql2csv < sql/oecm_summary.sql > outputs/oecm_summary.csv
-psql2csv < sql/oecm_nrr_cef_summary.sql > outputs/oecm_nrr_cef_summary.csv
+psql2csv < sql/summary_oecm.sql > outputs/oecm_summary.csv
+psql2csv < sql/summary_oecm_nrr_cef_subgroups.sql > outputs/oecm_nrr_cef_subgroups_summary.csv
+psql2csv < sql/summary_oecm_nrr_cef_groups.sql > outputs/oecm_nrr_cef_groups_summary.csv

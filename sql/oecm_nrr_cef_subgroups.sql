@@ -73,7 +73,7 @@ lines as
 (
   SELECT
     map_tile,
-    (st_dump(st_union(geom, .1))).geom as geom
+    (st_dump(st_union(geom, .01))).geom as geom
   FROM rings
   GROUP BY map_tile
 ),
@@ -89,7 +89,7 @@ flattened AS
 )
 
 -- get the attributes and insert into output
-INSERT INTO oecm_nrr_cef (
+INSERT INTO oecm_nrr_cef_subgroups (
     designations_planarized_id,
     adm_nr_region_id,
     cef_id,
@@ -105,8 +105,10 @@ INSERT INTO oecm_nrr_cef (
     sum_restriction,
     acts,
     nr_region,
+    cef_disturb_group,
     cef_disturb_group_rank,
     cef_disturb_sub_group,
+    cef_disturb_sub_group_rank,
     map_tile,
     geom
 )
@@ -126,8 +128,10 @@ SELECT
   c.sum_restriction,
   c.acts,
   a.region_name as nr_region,
+  b.cef_disturb_group,
   b.cef_disturb_group_rank,
   b.cef_disturb_sub_group,
+  b.cef_disturb_sub_group_rank,
   f.map_tile,
   f.geom
 FROM flattened f

@@ -1,0 +1,61 @@
+insert into oecm_nrr_cef_groups 
+(
+  designations_planarized_id,
+  adm_nr_region_id,
+  designation,
+  source_id,
+  source_name,
+  forest_restrictions,
+  mine_restrictions,
+  og_restrictions,
+  forest_restriction_max,
+  mine_restriction_max,
+  og_restriction_max,
+  sum_restriction,
+  acts,
+  nr_region,
+  cef_disturb_group,
+  cef_disturb_group_rank,
+  map_tile,
+  geom
+)
+select
+  designations_planarized_id,
+  adm_nr_region_id,
+  designation,
+  source_id,
+  source_name,
+  forest_restrictions,
+  mine_restrictions,
+  og_restrictions,
+  forest_restriction_max,
+  mine_restriction_max,
+  og_restriction_max,
+  sum_restriction,
+  acts,
+  nr_region,
+  cef_disturb_group,
+  cef_disturb_group_rank,
+  map_tile,
+  (st_dump(st_union(geom, .01))).geom as geom
+from oecm_nrr_cef_subgroups
+where map_tile = :'tile'
+group by
+  designations_planarized_id,
+  adm_nr_region_id,
+  designation,
+  source_id,
+  source_name,
+  forest_restrictions,
+  mine_restrictions,
+  og_restrictions,
+  forest_restriction_max,
+  mine_restriction_max,
+  og_restriction_max,
+  sum_restriction,
+  acts,
+  nr_region,
+  cef_disturb_group,
+  cef_disturb_group_rank,
+  map_tile;
+

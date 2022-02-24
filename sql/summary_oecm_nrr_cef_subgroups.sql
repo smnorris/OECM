@@ -8,11 +8,12 @@ with areas as
     sum_restriction,
     acts,
     nr_region,
+    cef_disturb_group,
     cef_disturb_group_rank,
     cef_disturb_sub_group,
+    cef_disturb_sub_group_rank,
     round((sum(st_area(a.geom)) / 10000)::numeric, 2) as area_ha
-  from oecm_nrr_cef a
-  where designations_planarized_id is not null
+  from oecm_nrr_cef_subgroups a
   group by
     designation,
     forest_restriction_max,
@@ -21,8 +22,10 @@ with areas as
     sum_restriction,
     acts,
     nr_region,
+    cef_disturb_group,
     cef_disturb_group_rank,
-    cef_disturb_sub_group
+    cef_disturb_sub_group,
+    cef_disturb_sub_group_rank
 ),
 
 total_per_designation as
@@ -43,8 +46,10 @@ select
   a.acts,
   a.sum_restriction,
   a.nr_region,
+  a.cef_disturb_group,
   a.cef_disturb_group_rank,
   a.cef_disturb_sub_group,
+  a.cef_disturb_sub_group_rank,
   t.designation_area_ha as designation_nrr_ha,
   case 
     when t.designation_area_ha > 0 then round(((a.area_ha / t.designation_area_ha) * 100), 2) 
@@ -54,4 +59,5 @@ select
 from areas a
 left outer join total_per_designation t
 on a.designation = t.designation and a.nr_region = t.nr_region
-where a.area_ha > 0;
+where a.area_ha > 0
+order by a.designation, a.nr_region, a.cef_disturb_group_rank, a.cef_disturb_sub_group_rank;
